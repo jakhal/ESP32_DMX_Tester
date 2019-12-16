@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "C:\\Users\\Jakob\\Documents\\Java"
+		},
+		{
+			"name": "Haus vom Nikolaus ESP32",
+			"path": "C:\\Users\\Jakob\\Documents\\PlatformIO\\Projects\\Haus vom Nikolaus ESP32"
+		},
+		{
+			"name": "191030-091806-featheresp32",
+			"path": "C:\\Users\\Jakob\\Documents\\PlatformIO\\Projects\\191030-091806-featheresp32"
+		},
+		{
+			"name": "DMX_Tester",
+			"path": "C:\\Users\\Jakob\\Documents\\PlatformIO\\Projects\\DMX_Tester"
+		}
+	],
+	"settings": {
+		"terminal.integrated.env.windows": {
+			"PATH": "C:\\Users\\Jakob\\.platformio\\penv\\Scripts;C:\\Users\\Jakob\\.platformio\\penv;C:\\Program Files\\AdoptOpenJDK\\jdk-11.0.4.11-hotspot\\bin;C:\\Program Files (x86)\\Common Files\\Intel\\Shared Libraries\\redist\\intel64_win\\compiler;C:\\Program Files (x86)\\Common Files\\Intel\\Shared Libraries\\redist\\intel64\\compiler;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files (x86)\\Intel\\OpenCL SDK\\2.0\\bin\\x86;C:\\Program Files (x86)\\Intel\\OpenCL SDK\\2.0\\bin\\x64;C:\\Program Files (x86)\\NoteBook FanControl\\;C:\\Users\\Jakob\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Jakob\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\Jakob\\AppData\\Local\\Microsoft\\WindowsApps;;C:\\Users\\Jakob\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Program Files\\AdoptOpenJDK\\jdk-11.0.4.11-hotspot\\bin;C:\\Program Files (x86)\\Common Files\\Intel\\Shared Libraries\\redist\\intel64_win\\compiler;C:\\Program Files (x86)\\Common Files\\Intel\\Shared Libraries\\redist\\intel64\\compiler;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files (x86)\\Intel\\OpenCL SDK\\2.0\\bin\\x86;C:\\Program Files (x86)\\Intel\\OpenCL SDK\\2.0\\bin\\x64;C:\\Program Files (x86)\\NoteBook FanControl\\;C:\\Users\\Jakob\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Jakob\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\Jakob\\AppData\\Local\\Microsoft\\WindowsApps;;C:\\Users\\Jakob\\AppData\\Local\\Programs\\Microsoft VS Code\\bin",
+			"PLATFORMIO_CALLER": "vscode"
+		}
+	}
+}
