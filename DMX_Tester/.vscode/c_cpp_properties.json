@@ -6,8 +6,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "c:/Users/Jakob/ownCloud/Documents/PRG1/DMX_Tester/include",
-                "c:/Users/Jakob/ownCloud/Documents/PRG1/DMX_Tester/src",
+                "c:/Users/Jakob/Documents/GitHub/ESP32_DMX_Tester/DMX_Tester/include",
+                "c:/Users/Jakob/Documents/GitHub/ESP32_DMX_Tester/DMX_Tester/src",
                 "C:/Users/Jakob/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "C:/Users/Jakob/.platformio/lib/OSC_ID423",
                 "C:/Users/Jakob/.platformio/lib/LXESP32DMX-master/src",
@@ -104,8 +104,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "c:/Users/Jakob/ownCloud/Documents/PRG1/DMX_Tester/include",
-                    "c:/Users/Jakob/ownCloud/Documents/PRG1/DMX_Tester/src",
+                    "c:/Users/Jakob/Documents/GitHub/ESP32_DMX_Tester/DMX_Tester/include",
+                    "c:/Users/Jakob/Documents/GitHub/ESP32_DMX_Tester/DMX_Tester/src",
                     "C:/Users/Jakob/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "C:/Users/Jakob/.platformio/lib/OSC_ID423",
                     "C:/Users/Jakob/.platformio/lib/LXESP32DMX-master/src",

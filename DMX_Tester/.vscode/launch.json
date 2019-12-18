@@ -12,7 +12,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "c:/Users/Jakob/ownCloud/Documents/PRG1/DMX_Tester/.pio/build/featheresp32/firmware.elf",
+            "executable": "c:/Users/Jakob/Documents/GitHub/ESP32_DMX_Tester/DMX_Tester/.pio/build/featheresp32/firmware.elf",
             "toolchainBinDir": "C:/Users/Jakob/.platformio/packages/toolchain-xtensa32/bin",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -24,7 +24,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "c:/Users/Jakob/ownCloud/Documents/PRG1/DMX_Tester/.pio/build/featheresp32/firmware.elf",
+            "executable": "c:/Users/Jakob/Documents/GitHub/ESP32_DMX_Tester/DMX_Tester/.pio/build/featheresp32/firmware.elf",
             "toolchainBinDir": "C:/Users/Jakob/.platformio/packages/toolchain-xtensa32/bin",
             "internalConsoleOptions": "openOnSessionStart"
         }

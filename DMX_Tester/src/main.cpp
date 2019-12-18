@@ -63,7 +63,7 @@ OSCErrorCode error;
 //******************************REC**************************************
 
 int sampleCounter = 0;
-int recordMatrix[][512]=
+uint8_t recordMatrix[64];
 /************************************************************************
 
   callback for when DMX frame is received
@@ -89,20 +89,29 @@ void receiveCallback(int slots) {
 	}
 }
 
+/***********************************************************************
+ TIMER INTERRUPT
+ ************************************************************************/
+/* create a hardware timer */
+hw_timer_t * timer = NULL;
 
-void receiveCallback_recordMode(int slots){ // Timer-Interrupt mit Samplingfrequenz, Matrix als Abweichung von Null-Matrix
-  if ( slots ) {                            // 
-    xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-    for(int i = 0; i<512 ; i++){
-      recordMatrix[sampleCounter][i] = ESP32DMX.getSlot(i+1)-recordMatrix[sampleCounter-1][i];
+/* LED pin */
+int led = 13;
+/* LED state */
+volatile byte state = LOW;
+
+void IRAM_ATTR onTimer(){ // Timer-Interrupt mit Samplingfrequenz, Matrix als Abweichung von Null-Matrix
+  state = !state;
+  digitalWrite(led, state);
+  Serial.println("INTERRUPT"); // for debugging
+    if(sampleCounter < 64){
+      xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+      //recordMatrix[sampleCounter][i] = ESP32DMX.getSlot(i+1)-recordMatrix[sampleCounter-1][i];
+      recordMatrix[sampleCounter] = ESP32DMX.getSlot(testChannel);
+      sampleCounter++;
+      xSemaphoreGive( ESP32DMX.lxDataLock );
     }
-    //recordMatrix[] = ESP32DMX.getSlot(testChannel);
-  }
-  sampleCounter++;
-  xSemaphoreGive( ESP32DMX.lxDataLock );
 }
-
-
 
 /************************************************************************
 	setup Funktion
@@ -110,6 +119,26 @@ void receiveCallback_recordMode(int slots){ // Timer-Interrupt mit Samplingfrequ
 
 void setup() { 
   Serial.begin(115200);
+
+  //INTERRUPT SHIT
+
+ // pinMode(led, OUTPUT);
+
+  /* Use 1st timer of 4 */
+  /* 1 tick take 1/(80MHZ/80) = 1us so we set divider 80 and count up */
+ // timer = timerBegin(0, 80, true);
+
+  /* Attach onTimer function to our timer */
+//  timerAttachInterrupt(timer, &onTimer, true);
+
+  /* Set alarm to call onTimer function every second 1 tick is 1us
+  => 1 second is 1000000us */
+  /* Repeat the alarm (third parameter) */
+//  timerAlarmWrite(timer, 22700, true);
+
+  /* Start an alarm */
+//  timerAlarmEnable(timer);
+//  Serial.println("start timer");
 
   // Server starten + Feedback
   Serial.println("Configuring access point...");
@@ -143,6 +172,17 @@ void channelDekrement(OSCMessage &msg);
 void channelInkrement(OSCMessage &msg);
 void levelDekrement(OSCMessage &msg);
 void levelInkrement(OSCMessage &msg);
+
+uint8_t Array[512];
+
+void memcpyTest(){
+  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+  memcpy(Array,ESP32DMX.dmxData(),512);
+  xSemaphoreGive( ESP32DMX.lxDataLock );
+  for(int i = 0; i<512; i++){
+    Serial.println(Array[i]);
+  }
+}
 
 // Funktion: OSC-Messages abrufen und weitergeben
 void getMsg() {
@@ -285,6 +325,8 @@ void sendMode(){
 
 // Receive-Modus-Schleife
 
+bool flag = false;
+
 void receiveMode(){
   // Setup Receive-spezifisch
   ESP32DMX.setDirectionPin(DMX_DIRECTION_PIN);
@@ -302,17 +344,19 @@ void receiveMode(){
     if ( dataChanged ) {
       dataChanged = 0;
       sendValue(testLevel, "/ReceivePage/Level");
-      Serial.print(testChannel);
-      Serial.print(" => ");
-      Serial.println(testLevel);
   } else {
       esp_task_wdt_feed();
-      vTaskDelay(100);  // vTaskDelay is called to prevent wdt timeout
+      vTaskDelay(150);  // vTaskDelay is called to prevent wdt timeout
+      if(!flag){
+          memcpyTest();
+          flag = true;
+      }
+      
   }
   }
 }
 
 void loop(){
-sendMode(); // State nach Reset: Send-Modus
+receiveMode(); // State nach Reset: Send-Modus
 }
 
