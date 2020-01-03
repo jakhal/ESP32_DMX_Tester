@@ -173,11 +173,25 @@ void channelInkrement(OSCMessage &msg);
 void levelDekrement(OSCMessage &msg);
 void levelInkrement(OSCMessage &msg);
 
+ 
+uint8_t **testArray;
+int total = 4;
+ int elements = 512;
+ testArray = malloc(sizeof(uint8_t*)* total);
+ to_fill = malloc(sizeof(char)* 100);
+
+ for (i=0; i < total; i++) {
+  testArray[i] = malloc(sizeof(uint8_t*) * elements;
+  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+  memcpy(testArray[i], ESP32DMX.dmxData(),sizeof(ESP32DMX.dmxData()) );   // <== here is where valgrind complains
+  xSemaphoreGive( ESP32DMX.lxDataLock ); 
+  }
+
 uint8_t Array[512];
 
 void memcpyTest(){
   xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-  memcpy(Array,ESP32DMX.dmxData(),512);
+  memcpy(Array,ESP32DMX.dmxData(),sizeof(ESP32DMX.dmxData()));
   xSemaphoreGive( ESP32DMX.lxDataLock );
   for(int i = 0; i<512; i++){
     Serial.println(Array[i]);
