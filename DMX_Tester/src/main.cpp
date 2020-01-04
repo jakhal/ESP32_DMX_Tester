@@ -63,7 +63,6 @@ OSCErrorCode error;
 //******************************REC**************************************
 
 int sampleCounter = 0;
-uint8_t recordMatrix[64];
 /************************************************************************
 
   callback for when DMX frame is received
@@ -104,13 +103,6 @@ void IRAM_ATTR onTimer(){ // Timer-Interrupt mit Samplingfrequenz, Matrix als Ab
   state = !state;
   digitalWrite(led, state);
   Serial.println("INTERRUPT"); // for debugging
-    if(sampleCounter < 64){
-      xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-      //recordMatrix[sampleCounter][i] = ESP32DMX.getSlot(i+1)-recordMatrix[sampleCounter-1][i];
-      recordMatrix[sampleCounter] = ESP32DMX.getSlot(testChannel);
-      sampleCounter++;
-      xSemaphoreGive( ESP32DMX.lxDataLock );
-    }
 }
 
 /************************************************************************
@@ -126,19 +118,19 @@ void setup() {
 
   /* Use 1st timer of 4 */
   /* 1 tick take 1/(80MHZ/80) = 1us so we set divider 80 and count up */
- // timer = timerBegin(0, 80, true);
+  //timer = timerBegin(0, 80, true);
 
   /* Attach onTimer function to our timer */
-//  timerAttachInterrupt(timer, &onTimer, true);
+  //timerAttachInterrupt(timer, &onTimer, true);
 
   /* Set alarm to call onTimer function every second 1 tick is 1us
   => 1 second is 1000000us */
   /* Repeat the alarm (third parameter) */
-//  timerAlarmWrite(timer, 22700, true);
+  //timerAlarmWrite(timer, 22700, true);
 
   /* Start an alarm */
-//  timerAlarmEnable(timer);
-//  Serial.println("start timer");
+  //timerAlarmEnable(timer);
+  Serial.println("start timer");
 
   // Server starten + Feedback
   Serial.println("Configuring access point...");
@@ -173,25 +165,66 @@ void channelInkrement(OSCMessage &msg);
 void levelDekrement(OSCMessage &msg);
 void levelInkrement(OSCMessage &msg);
 
- 
-uint8_t **testArray;
-int total = 4;
- int elements = 512;
- testArray = malloc(sizeof(uint8_t*)* total);
- to_fill = malloc(sizeof(char)* 100);
 
- for (i=0; i < total; i++) {
-  testArray[i] = malloc(sizeof(uint8_t*) * elements;
-  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-  memcpy(testArray[i], ESP32DMX.dmxData(),sizeof(ESP32DMX.dmxData()) );   // <== here is where valgrind complains
-  xSemaphoreGive( ESP32DMX.lxDataLock ); 
+int total = 4;
+int elements = 512;
+
+const unsigned long eventInterval = 1000;
+unsigned long previousTime = 0;
+
+
+void memcpyArray(){
+uint8_t testArray[4][512];
+boolean memcpyDone = false;
+boolean memcpyPrinted = false;
+
+/* Updates frequently */
+  unsigned long currentTime = millis();
+
+  /* This is the event */
+  if (currentTime - previousTime >= eventInterval && sampleCounter < total && !memcpyDone) {
+    /* Event code */
+    xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+    memcpy(testArray[sampleCounter], ESP32DMX.dmxData(), sizeof(uint8_t)*512);  
+    xSemaphoreGive( ESP32DMX.lxDataLock ); 
+    Serial.print("Copied Sample: ");
+    Serial.println(sampleCounter+1);
+    sampleCounter++;
+   /* Update the timing for the next time around */
+    previousTime = currentTime;
+    if(sampleCounter == total){memcpyDone = true;}
   }
+
+/*for(int i = 0; i < total && !memcpyDone; i++)
+  {
+  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+  memcpy(testArray[i], ESP32DMX.dmxData(), sizeof(uint8_t)*512);  
+  xSemaphoreGive( ESP32DMX.lxDataLock ); 
+  Serial.print("Copied Sample: ");
+  Serial.println(i+1);
+  }
+memcpyDone = true;
+*/
+
+for(int i = 0; i < total && memcpyDone && !memcpyPrinted; i++){
+          Serial.print("Sample: ");
+          Serial.println(i+1);
+          Serial.println("_________________________________");
+        for(int j = 0; j<512; j++){
+          Serial.print(testArray[i][j]);
+        }
+        Serial.println("_________________________________");
+  }
+memcpyPrinted = true;
+}
+
+
 
 uint8_t Array[512];
 
 void memcpyTest(){
   xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-  memcpy(Array,ESP32DMX.dmxData(),sizeof(ESP32DMX.dmxData()));
+  memcpy(Array,ESP32DMX.dmxData(),512);
   xSemaphoreGive( ESP32DMX.lxDataLock );
   for(int i = 0; i<512; i++){
     Serial.println(Array[i]);
@@ -361,10 +394,7 @@ void receiveMode(){
   } else {
       esp_task_wdt_feed();
       vTaskDelay(150);  // vTaskDelay is called to prevent wdt timeout
-      if(!flag){
-          memcpyTest();
-          flag = true;
-      }
+      memcpyArray();
       
   }
   }
