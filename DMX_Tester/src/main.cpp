@@ -164,24 +164,31 @@ void channelDekrement(OSCMessage &msg);
 void channelInkrement(OSCMessage &msg);
 void levelDekrement(OSCMessage &msg);
 void levelInkrement(OSCMessage &msg);
+void sendMsg(char text[], const char adress[]);
+void sendValue(int value, const char adress[]);
+void setfSample(OSCMessage &msg);
+
 
 
 int total = 10;
 int elements = 512;
 
-const unsigned long eventInterval = 100;
+unsigned long eventInterval = 100;
 unsigned long previousTime = 0;
 
+void memcpyArray(OSCMessage &msg){
 
-void memcpyArray(){
-uint8_t testArray[10][513];
+uint8_t testArray[total][513];
 boolean memcpyDone = false;
-boolean memcpyPrinted = false;
+
 
 /* Updates frequently */
+  
+sendValue(1,"/ReceivePage/recordLED");
+while(!memcpyDone){
   unsigned long currentTime = millis();
-
-  /* This is the event */
+  esp_task_wdt_feed(); // DMX-Library spezifisch, damit WDT nicht überläuft?
+    /* This is the event */
   if (currentTime - previousTime >= eventInterval && sampleCounter < total && !memcpyDone) {
     /* Event code */
     xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
@@ -192,21 +199,17 @@ boolean memcpyPrinted = false;
     sampleCounter++;
    /* Update the timing for the next time around */
     previousTime = currentTime;
-    if(sampleCounter == total){memcpyDone = true;}
+    if(sampleCounter == total){memcpyDone = true;sendValue(0,"/ReceivePage/recordLED");}
   }
+}
 
-/*for(int i = 0; i < total && !memcpyDone; i++)
-  {
-  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-  memcpy(testArray[i], ESP32DMX.dmxData(), sizeof(uint8_t)*512);  
-  xSemaphoreGive( ESP32DMX.lxDataLock ); 
-  Serial.print("Copied Sample: ");
-  Serial.println(i+1);
-  }
-memcpyDone = true;
-*/
+memcpyDone = false;
+sampleCounter = 0;
 
-for(int i = 0; i < total && memcpyDone && !memcpyPrinted; i++){
+
+
+
+for(int i = 0; i < total; i++){
           Serial.print("\n\nSample: ");
           Serial.println(i+1);
           Serial.println("_______________________________________________");
@@ -220,21 +223,19 @@ for(int i = 0; i < total && memcpyDone && !memcpyPrinted; i++){
         }
         Serial.println("_______________________________________________");
   }
-memcpyPrinted = true;
+sendValue(testArray[0][testChannel],"/ReceivePage/recordDisplay/1");
+sendValue(testArray[1][testChannel],"/ReceivePage/recordDisplay/2");
+sendValue(testArray[2][testChannel],"/ReceivePage/recordDisplay/3");
+sendValue(testArray[3][testChannel],"/ReceivePage/recordDisplay/4");
+sendValue(testArray[4][testChannel],"/ReceivePage/recordDisplay/5");
+sendValue(testArray[5][testChannel],"/ReceivePage/recordDisplay/6");
+sendValue(testArray[6][testChannel],"/ReceivePage/recordDisplay/7");
+sendValue(testArray[7][testChannel],"/ReceivePage/recordDisplay/8");
+sendValue(testArray[8][testChannel],"/ReceivePage/recordDisplay/9");
+sendValue(testArray[9][testChannel],"/ReceivePage/recordDisplay/10");
+
 }
 
-
-
-uint8_t Array[512];
-
-void memcpyTest(){
-  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-  memcpy(Array,ESP32DMX.dmxData(),512);
-  xSemaphoreGive( ESP32DMX.lxDataLock );
-  for(int i = 0; i<512; i++){
-    Serial.println(Array[i]);
-  }
-}
 
 // Funktion: OSC-Messages abrufen und weitergeben
 void getMsg() {
@@ -256,6 +257,8 @@ void getMsg() {
       msg.dispatch("/SendPage/Channel+", channelInkrement);
       msg.dispatch("/SendPage/Level-", levelDekrement);
       msg.dispatch("/SendPage/Level+", levelInkrement);
+      msg.dispatch("/ReceivePage/record", memcpyArray);
+      msg.dispatch("/ReceivePage/fSample", setfSample);
       
       
     } else {
@@ -285,6 +288,14 @@ void sendValue(int value, const char adress[]){
   Udp.endPacket();
   msg.empty();
 }
+
+void setfSample(OSCMessage &msg){
+  if(msg.isFloat(0)){
+    eventInterval = msg.getFloat(0);
+    sendValue(eventInterval,"/ReceivePage/fSampleLabel");
+    }
+}
+
 
 // Funktion die aufgerufen wenn OSC-Message zum Wechsel in Send-Mode kommt
 void setModeSend(OSCMessage &msg){
@@ -399,7 +410,7 @@ void receiveMode(){
   } else {
       esp_task_wdt_feed();
       vTaskDelay(150);  // vTaskDelay is called to prevent wdt timeout
-      memcpyArray();
+      
       
   }
   }
