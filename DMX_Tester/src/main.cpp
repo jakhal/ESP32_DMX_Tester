@@ -112,26 +112,6 @@ void IRAM_ATTR onTimer(){ // Timer-Interrupt mit Samplingfrequenz, Matrix als Ab
 void setup() { 
   Serial.begin(115200);
 
-  //INTERRUPT SHIT
-
- // pinMode(led, OUTPUT);
-
-  /* Use 1st timer of 4 */
-  /* 1 tick take 1/(80MHZ/80) = 1us so we set divider 80 and count up */
-  //timer = timerBegin(0, 80, true);
-
-  /* Attach onTimer function to our timer */
-  //timerAttachInterrupt(timer, &onTimer, true);
-
-  /* Set alarm to call onTimer function every second 1 tick is 1us
-  => 1 second is 1000000us */
-  /* Repeat the alarm (third parameter) */
-  //timerAlarmWrite(timer, 22700, true);
-
-  /* Start an alarm */
-  //timerAlarmEnable(timer);
-  Serial.println("start timer");
-
   // Server starten + Feedback
   Serial.println("Configuring access point...");
   WiFi.softAP(ssid, password);
@@ -145,6 +125,10 @@ void setup() {
   Udp.begin(localPort);
   Serial.print("Local port: ");
   Serial.println(localPort);
+
+  
+  
+
 }
 
 // Funktion: DMX in Output-Buffer geben
@@ -167,18 +151,33 @@ void levelInkrement(OSCMessage &msg);
 void sendMsg(char text[], const char adress[]);
 void sendValue(int value, const char adress[]);
 void setfSample(OSCMessage &msg);
+void memcpyArray( void * parameter);
 
 
-
-int total = 10;
-int elements = 512;
+int totalSamples = 20;
 
 unsigned long eventInterval = 100;
 unsigned long previousTime = 0;
+TaskHandle_t _memcpyHandle;
+boolean taskCreated = 0;
 
-void memcpyArray(OSCMessage &msg){
+void start_memcpyArray(OSCMessage &msg){
+  //if(!taskCreated){
+  xTaskCreate(
+                    memcpyArray,          /* Task function. */
+                    "memcpyTask",        /* String with name of task. */
+                    32768,            /* Stack size in bytes. */
+                    NULL,             /* Parameter passed as input of the task */
+                    2,                /* Priority of the task. */
+                    &_memcpyHandle);            /* Task handle. */
+  taskCreated = 1;
+ }
+ //else vTaskResume(_memcpyHandle);
+//}
 
-uint8_t testArray[total][513];
+void memcpyArray( void * parameter){
+  
+uint8_t testArray[totalSamples][513];
 boolean memcpyDone = false;
 
 
@@ -189,7 +188,7 @@ while(!memcpyDone){
   unsigned long currentTime = millis();
   esp_task_wdt_feed(); // DMX-Library spezifisch, damit WDT nicht überläuft?
     /* This is the event */
-  if (currentTime - previousTime >= eventInterval && sampleCounter < total && !memcpyDone) {
+  if (currentTime - previousTime >= eventInterval && sampleCounter < totalSamples && !memcpyDone) {
     /* Event code */
     xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
     memcpy(testArray[sampleCounter], ESP32DMX.dmxData(), sizeof(uint8_t)*513);  
@@ -199,7 +198,7 @@ while(!memcpyDone){
     sampleCounter++;
    /* Update the timing for the next time around */
     previousTime = currentTime;
-    if(sampleCounter == total){memcpyDone = true;sendValue(0,"/ReceivePage/recordLED");}
+    if(sampleCounter == totalSamples){memcpyDone = true;sendValue(0,"/ReceivePage/recordLED");}
   }
 }
 
@@ -209,7 +208,8 @@ sampleCounter = 0;
 
 
 
-for(int i = 0; i < total; i++){
+
+for(int i = 0; i < totalSamples; i++){
           Serial.print("\n\nSample: ");
           Serial.println(i+1);
           Serial.println("_______________________________________________");
@@ -233,7 +233,21 @@ sendValue(testArray[6][testChannel],"/ReceivePage/recordDisplay/7");
 sendValue(testArray[7][testChannel],"/ReceivePage/recordDisplay/8");
 sendValue(testArray[8][testChannel],"/ReceivePage/recordDisplay/9");
 sendValue(testArray[9][testChannel],"/ReceivePage/recordDisplay/10");
+sendValue(testArray[10][testChannel],"/ReceivePage/recordDisplay/11");
+sendValue(testArray[11][testChannel],"/ReceivePage/recordDisplay/12");
+sendValue(testArray[12][testChannel],"/ReceivePage/recordDisplay/13");
+sendValue(testArray[13][testChannel],"/ReceivePage/recordDisplay/14");
+sendValue(testArray[14][testChannel],"/ReceivePage/recordDisplay/15");
+sendValue(testArray[15][testChannel],"/ReceivePage/recordDisplay/16");
+sendValue(testArray[16][testChannel],"/ReceivePage/recordDisplay/17");
+sendValue(testArray[17][testChannel],"/ReceivePage/recordDisplay/18");
+sendValue(testArray[18][testChannel],"/ReceivePage/recordDisplay/19");
+sendValue(testArray[19][testChannel],"/ReceivePage/recordDisplay/20");
 
+esp_task_wdt_feed(); // DMX-Library spezifisch, damit WDT nicht überläuft?
+vTaskDelay(1);       // 1 Tick Delay
+
+vTaskDelete( NULL );
 }
 
 
@@ -257,7 +271,7 @@ void getMsg() {
       msg.dispatch("/SendPage/Channel+", channelInkrement);
       msg.dispatch("/SendPage/Level-", levelDekrement);
       msg.dispatch("/SendPage/Level+", levelInkrement);
-      msg.dispatch("/ReceivePage/record", memcpyArray);
+      msg.dispatch("/ReceivePage/record", start_memcpyArray);
       msg.dispatch("/ReceivePage/fSample", setfSample);
       
       
