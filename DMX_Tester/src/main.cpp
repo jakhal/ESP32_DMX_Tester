@@ -166,15 +166,15 @@ void levelDekrement(OSCMessage &msg);
 void levelInkrement(OSCMessage &msg);
 
 
-int total = 4;
+int total = 10;
 int elements = 512;
 
-const unsigned long eventInterval = 1000;
+const unsigned long eventInterval = 100;
 unsigned long previousTime = 0;
 
 
 void memcpyArray(){
-uint8_t testArray[4][512];
+uint8_t testArray[10][513];
 boolean memcpyDone = false;
 boolean memcpyPrinted = false;
 
@@ -185,7 +185,7 @@ boolean memcpyPrinted = false;
   if (currentTime - previousTime >= eventInterval && sampleCounter < total && !memcpyDone) {
     /* Event code */
     xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-    memcpy(testArray[sampleCounter], ESP32DMX.dmxData(), sizeof(uint8_t)*512);  
+    memcpy(testArray[sampleCounter], ESP32DMX.dmxData(), sizeof(uint8_t)*513);  
     xSemaphoreGive( ESP32DMX.lxDataLock ); 
     Serial.print("Copied Sample: ");
     Serial.println(sampleCounter+1);
@@ -207,13 +207,18 @@ memcpyDone = true;
 */
 
 for(int i = 0; i < total && memcpyDone && !memcpyPrinted; i++){
-          Serial.print("Sample: ");
+          Serial.print("\n\nSample: ");
           Serial.println(i+1);
-          Serial.println("_________________________________");
+          Serial.println("_______________________________________________");
         for(int j = 0; j<512; j++){
+          Serial.print(" ");
           Serial.print(testArray[i][j]);
+          Serial.print(" ");
+          if((j+1) % 32 == 0 ){
+            Serial.print("\n");
+          }
         }
-        Serial.println("_________________________________");
+        Serial.println("_______________________________________________");
   }
 memcpyPrinted = true;
 }
