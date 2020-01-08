@@ -38,7 +38,7 @@ uint8_t dmxbuffer[DMX_MAX_FRAME];
 
 
 // the addresses of the slots to observe
-int testChannel = 10;
+int testChannel = 1;
 
 // the levels of those slots
 uint8_t testLevel = 0;
@@ -61,6 +61,7 @@ const unsigned int localPort = 8888;        // Incoming-Ports des Hosts für ank
 OSCErrorCode error;
 
 //******************************REC**************************************
+const char *MultifaderAdressMatrix[64] = {"/ReceivePage/recordDisplay/1","/ReceivePage/recordDisplay/2","/ReceivePage/recordDisplay/3","/ReceivePage/recordDisplay/4","/ReceivePage/recordDisplay/5","/ReceivePage/recordDisplay/6","/ReceivePage/recordDisplay/7","/ReceivePage/recordDisplay/8","/ReceivePage/recordDisplay/9","/ReceivePage/recordDisplay/10","/ReceivePage/recordDisplay/11","/ReceivePage/recordDisplay/12","/ReceivePage/recordDisplay/13","/ReceivePage/recordDisplay/14","/ReceivePage/recordDisplay/15","/ReceivePage/recordDisplay/16","/ReceivePage/recordDisplay/17","/ReceivePage/recordDisplay/18","/ReceivePage/recordDisplay/19","/ReceivePage/recordDisplay/20","/ReceivePage/recordDisplay/21","/ReceivePage/recordDisplay/22","/ReceivePage/recordDisplay/23","/ReceivePage/recordDisplay/24","/ReceivePage/recordDisplay/25","/ReceivePage/recordDisplay/26","/ReceivePage/recordDisplay/27","/ReceivePage/recordDisplay/28","/ReceivePage/recordDisplay/29","/ReceivePage/recordDisplay/30","/ReceivePage/recordDisplay/31","/ReceivePage/recordDisplay/32","/ReceivePage/recordDisplay/33","/ReceivePage/recordDisplay/34","/ReceivePage/recordDisplay/35","/ReceivePage/recordDisplay/36","/ReceivePage/recordDisplay/37","/ReceivePage/recordDisplay/38","/ReceivePage/recordDisplay/39","/ReceivePage/recordDisplay/40","/ReceivePage/recordDisplay/41","/ReceivePage/recordDisplay/42","/ReceivePage/recordDisplay/43","/ReceivePage/recordDisplay/44","/ReceivePage/recordDisplay/45","/ReceivePage/recordDisplay/46","/ReceivePage/recordDisplay/47","/ReceivePage/recordDisplay/48","/ReceivePage/recordDisplay/49","/ReceivePage/recordDisplay/50","/ReceivePage/recordDisplay/51","/ReceivePage/recordDisplay/52","/ReceivePage/recordDisplay/53","/ReceivePage/recordDisplay/54","/ReceivePage/recordDisplay/55","/ReceivePage/recordDisplay/56","/ReceivePage/recordDisplay/57","/ReceivePage/recordDisplay/58","/ReceivePage/recordDisplay/59","/ReceivePage/recordDisplay/60","/ReceivePage/recordDisplay/61","/ReceivePage/recordDisplay/62","/ReceivePage/recordDisplay/63","/ReceivePage/recordDisplay/64"};
 
 int sampleCounter = 0;
 /************************************************************************
@@ -109,6 +110,8 @@ void IRAM_ATTR onTimer(){ // Timer-Interrupt mit Samplingfrequenz, Matrix als Ab
 	setup Funktion
 *************************************************************************/
 
+void wdt_reset ( void * parameter);
+
 void setup() { 
   Serial.begin(115200);
 
@@ -126,11 +129,24 @@ void setup() {
   Serial.print("Local port: ");
   Serial.println(localPort);
 
-  
+  xTaskCreate(
+                  wdt_reset,          /* Task function. */
+                  "wdt_reset",        /* String with name of task. */
+                  1024,            /* Stack size in bytes. */
+                  NULL,             /* Parameter passed as input of the task */
+                  5,                /* Priority of the task. */
+                  NULL);            /* Task handle. */
   
 
 }
 
+void wdt_reset ( void * parameter){
+  while(true){
+      esp_task_wdt_feed();
+      vTaskDelay(10);
+  }
+  
+}
 // Funktion: DMX in Output-Buffer geben
 void copyDMXToOutput(void) {
   xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
@@ -152,37 +168,43 @@ void sendMsg(char text[], const char adress[]);
 void sendValue(int value, const char adress[]);
 void setfSample(OSCMessage &msg);
 void memcpyArray( void * parameter);
+void playRecorded(OSCMessage &msg);
 
 
-int totalSamples = 20;
+int totalSamples = 160;
 
-unsigned long eventInterval = 100;
+unsigned long eventInterval = 40;
 unsigned long previousTime = 0;
-TaskHandle_t _memcpyHandle;
+TaskHandle_t _memcpyHandle = NULL;
 boolean taskCreated = 0;
+boolean record = 0;
 
 void start_memcpyArray(OSCMessage &msg){
-  //if(!taskCreated){
+  if(!taskCreated){
   xTaskCreate(
                     memcpyArray,          /* Task function. */
                     "memcpyTask",        /* String with name of task. */
-                    32768,            /* Stack size in bytes. */
+                    40000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
-                    2,                /* Priority of the task. */
+                    1,                /* Priority of the task. */
                     &_memcpyHandle);            /* Task handle. */
   taskCreated = 1;
+  //esp_task_wdt_add(_memcpyHandle);
  }
- //else vTaskResume(_memcpyHandle);
-//}
+else {record = 1;}
+}
+
+uint8_t recordArray[160][513];
 
 void memcpyArray( void * parameter){
   
-uint8_t testArray[totalSamples][513];
-boolean memcpyDone = false;
 
+
+while(true){
 
 /* Updates frequently */
-  
+if(record){  
+boolean memcpyDone = false;
 sendValue(1,"/ReceivePage/recordLED");
 while(!memcpyDone){
   unsigned long currentTime = millis();
@@ -191,7 +213,7 @@ while(!memcpyDone){
   if (currentTime - previousTime >= eventInterval && sampleCounter < totalSamples && !memcpyDone) {
     /* Event code */
     xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
-    memcpy(testArray[sampleCounter], ESP32DMX.dmxData(), sizeof(uint8_t)*513);  
+    memcpy(recordArray[sampleCounter], ESP32DMX.dmxData(), sizeof(uint8_t)*513);  
     xSemaphoreGive( ESP32DMX.lxDataLock ); 
     Serial.print("Copied Sample: ");
     Serial.println(sampleCounter+1);
@@ -210,44 +232,30 @@ sampleCounter = 0;
 
 
 for(int i = 0; i < totalSamples; i++){
+          esp_task_wdt_feed(); // DMX-Library spezifisch, damit WDT nicht überläuft?
           Serial.print("\n\nSample: ");
           Serial.println(i+1);
           Serial.println("_______________________________________________");
-        for(int j = 0; j<512; j++){
+          if(i<64){sendValue(recordArray[i][testChannel],MultifaderAdressMatrix[i]);}
+        /*for(int j = 0; j<512; j++){
           Serial.print(" ");
-          Serial.print(testArray[i][j]);
+          Serial.print(recordArray[i][j]);
           Serial.print(" ");
           if((j+1) % 32 == 0 ){
             Serial.print("\n");
           }
         }
         Serial.println("_______________________________________________");
+        */
   }
-sendValue(testArray[0][testChannel],"/ReceivePage/recordDisplay/1");
-sendValue(testArray[1][testChannel],"/ReceivePage/recordDisplay/2");
-sendValue(testArray[2][testChannel],"/ReceivePage/recordDisplay/3");
-sendValue(testArray[3][testChannel],"/ReceivePage/recordDisplay/4");
-sendValue(testArray[4][testChannel],"/ReceivePage/recordDisplay/5");
-sendValue(testArray[5][testChannel],"/ReceivePage/recordDisplay/6");
-sendValue(testArray[6][testChannel],"/ReceivePage/recordDisplay/7");
-sendValue(testArray[7][testChannel],"/ReceivePage/recordDisplay/8");
-sendValue(testArray[8][testChannel],"/ReceivePage/recordDisplay/9");
-sendValue(testArray[9][testChannel],"/ReceivePage/recordDisplay/10");
-sendValue(testArray[10][testChannel],"/ReceivePage/recordDisplay/11");
-sendValue(testArray[11][testChannel],"/ReceivePage/recordDisplay/12");
-sendValue(testArray[12][testChannel],"/ReceivePage/recordDisplay/13");
-sendValue(testArray[13][testChannel],"/ReceivePage/recordDisplay/14");
-sendValue(testArray[14][testChannel],"/ReceivePage/recordDisplay/15");
-sendValue(testArray[15][testChannel],"/ReceivePage/recordDisplay/16");
-sendValue(testArray[16][testChannel],"/ReceivePage/recordDisplay/17");
-sendValue(testArray[17][testChannel],"/ReceivePage/recordDisplay/18");
-sendValue(testArray[18][testChannel],"/ReceivePage/recordDisplay/19");
-sendValue(testArray[19][testChannel],"/ReceivePage/recordDisplay/20");
+record = false;
+}
 
 esp_task_wdt_feed(); // DMX-Library spezifisch, damit WDT nicht überläuft?
-vTaskDelay(1);       // 1 Tick Delay
+vTaskDelay(10);       // 1 Tick Delay
 
-vTaskDelete( NULL );
+
+}
 }
 
 
@@ -273,6 +281,7 @@ void getMsg() {
       msg.dispatch("/SendPage/Level+", levelInkrement);
       msg.dispatch("/ReceivePage/record", start_memcpyArray);
       msg.dispatch("/ReceivePage/fSample", setfSample);
+      msg.dispatch("/SendPage/play", playRecorded);
       
       
     } else {
@@ -311,10 +320,42 @@ void setfSample(OSCMessage &msg){
 }
 
 
+void playRecorded(OSCMessage &msg){
+  boolean playDone = false;
+  int playbackCounter = 0;
+  while(!playDone){
+  unsigned long currentTime = millis();
+  esp_task_wdt_feed(); // DMX-Library spezifisch, damit WDT nicht überläuft?
+    /* This is the event */
+  if (currentTime - previousTime >= eventInterval && playbackCounter < totalSamples && !playDone) {
+    /* Event code */
+    memcpy(dmxbuffer, recordArray[playbackCounter], sizeof(uint8_t)*513);
+    copyDMXToOutput();  
+    Serial.print("Played Sample: ");
+    Serial.println(playbackCounter+1);
+    playbackCounter++;
+   /* Update the timing for the next time around */
+    previousTime = currentTime;
+    if(playbackCounter == totalSamples){playDone = true;}
+  }
+}
+}
+
+
 // Funktion die aufgerufen wenn OSC-Message zum Wechsel in Send-Mode kommt
 void setModeSend(OSCMessage &msg){
   bool sendState = msg.getFloat(0); // 1 für Send, 0 für Receive
   if(sendState){
+    // Setup Send-spezifisch
+    Serial.print("Setup DMX");
+    
+    pinMode(DMX_DIRECTION_PIN, OUTPUT);
+    digitalWrite(DMX_DIRECTION_PIN, HIGH);
+
+    pinMode(DMX_SERIAL_OUTPUT_PIN, OUTPUT);
+    ESP32DMX.startOutput(DMX_SERIAL_OUTPUT_PIN);
+    Serial.println("Setup DMX complete");
+    Serial.println("***sendMode activated***");
     sendMode();
   }
 }
@@ -323,7 +364,19 @@ void setModeSend(OSCMessage &msg){
 void setModeReceive(OSCMessage &msg){
   bool receiveState = msg.getFloat(0); // 1 für Send, 0 für Receive
   if(receiveState){
-    receiveMode();
+          // Setup Receive-spezifisch
+      ESP32DMX.setDirectionPin(DMX_DIRECTION_PIN);
+
+      Serial.print(", set callback");
+      ESP32DMX.setDataReceivedCallback(receiveCallback);
+
+      Serial.print(", start dmx input");
+      ESP32DMX.startInput(DMX_SERIAL_INPUT_PIN);
+      
+      Serial.println(", setup complete.");
+      Serial.println("***receiveMode activated***");
+      
+      receiveMode();
   }
 }
 
@@ -382,16 +435,7 @@ void channelInkrement(OSCMessage &msg){
 // Send-Modus-Schleife
 
 void sendMode(){
-  // Setup Send-spezifisch
-    Serial.print("Setup DMX");
-  
-  pinMode(DMX_DIRECTION_PIN, OUTPUT);
-  digitalWrite(DMX_DIRECTION_PIN, HIGH);
 
-  pinMode(DMX_SERIAL_OUTPUT_PIN, OUTPUT);
-  ESP32DMX.startOutput(DMX_SERIAL_OUTPUT_PIN);
-  Serial.println("Setup DMX complete");
-  Serial.println("***sendMode activated***");
   while(true){
     getMsg();
     copyDMXToOutput();
@@ -405,24 +449,14 @@ void sendMode(){
 bool flag = false;
 
 void receiveMode(){
-  // Setup Receive-spezifisch
-  ESP32DMX.setDirectionPin(DMX_DIRECTION_PIN);
 
-  Serial.print(", set callback");
-  ESP32DMX.setDataReceivedCallback(receiveCallback);
-
-  Serial.print(", start dmx input");
-  ESP32DMX.startInput(DMX_SERIAL_INPUT_PIN);
-  
-  Serial.println(", setup complete.");
-  Serial.println("***receiveMode activated***");
   while(true){
+    esp_task_wdt_feed();
     getMsg();
     if ( dataChanged ) {
       dataChanged = 0;
       sendValue(testLevel, "/ReceivePage/Level");
   } else {
-      esp_task_wdt_feed();
       vTaskDelay(150);  // vTaskDelay is called to prevent wdt timeout
       
       
@@ -431,6 +465,7 @@ void receiveMode(){
 }
 
 void loop(){
-receiveMode(); // State nach Reset: Send-Modus
+OSCMessage startmsg;
+setModeReceive(startmsg); // State nach Reset: Send-Modus
 }
 
