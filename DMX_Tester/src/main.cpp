@@ -1,36 +1,4 @@
-/**************************************************************************/
-/*!
-    @file     outputTest.ino
-    @author   Claude Heintz
-    @license  BSD (see LXESP32DMX LICENSE)
-    @copyright 2017 by Claude Heintz
-
-    Simple Fade test of ESP32 DMX Driver
-    @section  HISTORY
-
-    v1.00 - First release
-*/
-/**************************************************************************/
-
-// DMX Bibliotheken
-#include <LXESP32DMX.h> 
-#include <esp_task_wdt.h>
-
-// WiFi Bibliotheken
-#include <WiFi.h>
-#include <WiFiUdp.h>
-#include <WiFiAP.h>
-
-// OSC Bibliotheken
-#include <OSCMessage.h>
-#include <OSCBundle.h>
-#include <OSCData.h>
-
-
-#define DMX_DIRECTION_PIN 21
-#define DMX_SERIAL_OUTPUT_PIN 17
-#define DMX_SERIAL_INPUT_PIN 16
-
+#include <DMX_Tester.h>
 //*****************************DMX**************************************************
 
 uint8_t level;
@@ -156,19 +124,7 @@ void copyDMXToOutput(void) {
    xSemaphoreGive( ESP32DMX.lxDataLock );
 }
 
-void sendMode();
-void receiveMode();
-void setModeSend(OSCMessage &msg);
-void setModeReceive(OSCMessage &msg);
-void channelDekrement(OSCMessage &msg);
-void channelInkrement(OSCMessage &msg);
-void levelDekrement(OSCMessage &msg);
-void levelInkrement(OSCMessage &msg);
-void sendMsg(char text[], const char adress[]);
-void sendValue(int value, const char adress[]);
-void setfSample(OSCMessage &msg);
-void memcpyArray( void * parameter);
-void playRecorded(OSCMessage &msg);
+
 
 
 int totalSamples = 160;
@@ -179,11 +135,11 @@ TaskHandle_t _memcpyHandle = NULL;
 boolean taskCreated = 0;
 boolean record = 0;
 
-void start_memcpyArray(OSCMessage &msg){
+void start_recordDMX(OSCMessage &msg){
   if(!taskCreated){
   xTaskCreate(
-                    memcpyArray,          /* Task function. */
-                    "memcpyTask",        /* String with name of task. */
+                    recordDMX,          /* Task function. */
+                    "recordDMX_task",        /* String with name of task. */
                     40000,            /* Stack size in bytes. */
                     NULL,             /* Parameter passed as input of the task */
                     1,                /* Priority of the task. */
@@ -196,7 +152,7 @@ else {record = 1;}
 
 uint8_t recordArray[160][513];
 
-void memcpyArray( void * parameter){
+void recordDMX( void * parameter){
   
 
 
@@ -279,7 +235,7 @@ void getMsg() {
       msg.dispatch("/SendPage/Channel+", channelInkrement);
       msg.dispatch("/SendPage/Level-", levelDekrement);
       msg.dispatch("/SendPage/Level+", levelInkrement);
-      msg.dispatch("/ReceivePage/record", start_memcpyArray);
+      msg.dispatch("/ReceivePage/record", start_recordDMX);
       msg.dispatch("/ReceivePage/fSample", setfSample);
       msg.dispatch("/SendPage/play", playRecorded);
       
