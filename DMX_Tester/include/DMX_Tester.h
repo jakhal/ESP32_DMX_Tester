@@ -87,6 +87,24 @@ void setfSample(OSCMessage &msg);
      * @discussion called when fader "fSample" is changed
 	 * @param msg the msg containing the value set in TouchOSC-fader "fSample"
     */
+void setChannelRecord(OSCMessage &msg);
+/*!
+	* @brief function to set the sampling interval for recording incoming DMX
+	* @discussion called when fader "fSample" is changed
+	* @param msg the msg containing the value set in TouchOSC-fader "fSample"
+*/
+void setTimeRecord(OSCMessage &msg);
+	/*!
+	 * @brief function to set the sampling interval for recording incoming DMX
+     * @discussion called when fader "fSample" is changed
+	 * @param msg the msg containing the value set in TouchOSC-fader "fSample"
+    */
+void refreshRecordDisplay();
+	/*!
+	 * @brief function to record incoming DMX data 
+     * @discussion is a task function, task created by calling start_recordDMX function
+	 * @param parameter parameter could be handled when creating task - NOT USED
+    */
 void recordDMX( void * parameter);
 	/*!
 	 * @brief function to record incoming DMX data 

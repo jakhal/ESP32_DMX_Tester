@@ -1,0 +1,12 @@
+// Example program
+#include <iostream>
+#include <string>
+
+int main()
+{
+  std::string name;
+  std::cout << "const char *channelDisplay_1_Adresses[64] = {";
+  for(int i = 0; i<64; i++){
+      std::cout << "\"/RecordPage/channelDisplay_1/" << i+1 << "\",";
+}
+}
