@@ -14,6 +14,10 @@
 #include <OSCMessage.h>
 #include <OSCBundle.h>
 #include <OSCData.h>
+#include <SPI.h>
+#include <OSCBundle.h>
+
+#include <stream.h>
 
 
 #define DMX_DIRECTION_PIN 21
@@ -99,7 +103,7 @@ void setTimeRecord(OSCMessage &msg);
      * @discussion called when fader "fSample" is changed
 	 * @param msg the msg containing the value set in TouchOSC-fader "fSample"
     */
-void refreshRecordDisplay();
+void refreshRecordDisplay(void*parameter);
 	/*!
 	 * @brief function to record incoming DMX data 
      * @discussion is a task function, task created by calling start_recordDMX function
@@ -122,6 +126,11 @@ void start_recordDMX(OSCMessage &msg);
 	 * @brief function to start the DMX recording task or if task was already started, set the record flag
      * @discussion called by TouchOSC button "record" on ReceivePage
 	 * @param msg the msg handed by OSC
+    */
+void getMsg();
+	/*!
+	 * @brief task function continously checking for new OSC Messages
+	 * @param 
     */
 
 #endif // ifndef DMXTESTER_H
